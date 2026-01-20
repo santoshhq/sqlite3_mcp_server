@@ -7,9 +7,11 @@ PATH = os.path.join(BASE_DIR, "database.db")
 
 mcp = FastMCP(name="Database")
 
+# ------------------------------------------------
 def get_conn():
-    conn = sqlite3.connect(PATH)
+    conn = sqlite3.connect(PATH, check_same_thread=False)
     cursor = conn.cursor()
+
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -19,14 +21,15 @@ def get_conn():
             mobileNumber TEXT NOT NULL
         )
     """)
+
     conn.commit()
     return conn
 
-
+# ------------------------------------------------
 @mcp.tool
 def add_user(username: str, email: str, mobileNumber: str):
     """Add a new user to the database."""
-    conn =  get_conn()
+    conn = get_conn()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -37,12 +40,15 @@ def add_user(username: str, email: str, mobileNumber: str):
     conn.commit()
     conn.close()
 
-    return f"User {username} added successfully."
+    return {
+        "status": "success",
+        "message": f"User {username} added successfully"
+    }
 
-
+# ------------------------------------------------
 @mcp.tool
 def get_user_by_email(email: str):
-    conn =  get_conn()
+    conn = get_conn()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -54,18 +60,17 @@ def get_user_by_email(email: str):
     user = cursor.fetchone()
     conn.close()
 
-    if user:
-        return {
-            "id": user[0],
-            "username": user[1],
-            "email": user[2],
-            "created_at": user[3],
-            "mobileNumber": user[4]
-        }
+    if not user:
+        return {"status": "not_found"}
 
-    return f"No user found with email: {email}"
+    return {
+        "id": user[0],
+        "username": user[1],
+        "email": user[2],
+        "created_at": user[3],
+        "mobileNumber": user[4]
+    }
 
-
+# ------------------------------------------------
 if __name__ == "__main__":
-      # ✅ REQUIRED
-    mcp.run(transport="http",host="0.0.0.0",port=8001)  # or "http"
+    mcp.run(transport="http", host="0.0.0.0" , port=6060)
